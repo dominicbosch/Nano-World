@@ -43,10 +43,18 @@
 	</adduser>
 	<addsample>
 		<name>Coin</name>
+		<commandmoveto>goto0</commandmoveto>
+		<commandreleaselock>P0 OK</commandreleaselock>
+		<posx>500</posx>
+		<posy>500</posy>
+		<deltax>0</deltax>
+		<deltay>0</deltay>
+	</addsample>
+		<name>Coin</name>
 		<commandmoveto>goto1</commandmoveto>
 		<commandreleaselock>P1 OK</commandreleaselock>
-		<posx>10000</posx>
-		<posy>10000</posy>
+		<posx>8300</posx>
+		<posy>6000</posy>
 		<deltax>100</deltax>
 		<deltay>100</deltay>
 	</addsample>
@@ -63,7 +71,7 @@
 		<name>Glass</name>
 		<commandmoveto>goto3</commandmoveto>
 		<commandreleaselock>P3 OK</commandreleaselock>
-		<posx>5000</posx>
+		<posx>5800</posx>
 		<posy>10000</posy>
 		<deltax>200</deltax>
 		<deltay>200</deltay>

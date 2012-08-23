@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Remote Experiment Applet for the RAFM</title>
+	<script type="text/javascript">
+		function login() {
+			document.getElementById('RemExpClient').setUserID('2aba8cc518a656682d7d520f9b86631aa76c4d0d09bcd3b19b52082b8d15f9ee23ff68acdc7f536a0af9175ce80b6303e079ab4ea0bdc93a0c01e63d08b76be4');
+		}
+	</script>
+</head>
+<body onload="login()" marginheight="0" marginwidth="0" leftmargin="0" topmargin="0">
+	<table>
+		<tr>
+			<td>
+				<object type="application/x-java-applet" id="RemExpClient" archive="jardist/nano-remexp.jar" 
+						code="nano.remexp.client.ClientApplet.class" 
+						width="550" height="700">
+					<param name="url" value="rafmdmzdsvr.cs.unibas.ch">
+					<param name="eventport" value="9100">
+					<param name="streamport" value="9102">
+				</object>
+			</td>
+			<td><!-- 4:5 with bar -->
+				<iframe src="http://www.ustream.tv/embed/11760438?autoplay=true&viewcount=false" width="425" height="340" scrolling="no" frameborder="0" style="border: 0px none transparent;"></iframe><br />
+				<iframe src="http://www.ustream.tv/embed/11760477?autoplay=true&viewcount=false" width="425" height="340" scrolling="no" frameborder="0" style="border: 0px none transparent;"></iframe>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>

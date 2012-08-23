@@ -1,0 +1,14 @@
+#ignore backup files
+*~
+
+#Ignore hidden files
+.*
+
+# Do not ignore me of course (needed if hasn't been commited yet)
+!/.gitignore
+
+# Ignore others:
+uml
+bin
+jardist
+log/*

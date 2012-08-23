@@ -14,7 +14,6 @@ import java.awt.image.MemoryImageSource;
 /**
  * Copyright: Copyright (c) 2012 
  * 
- * @author
  * @version 1.1
  */
 
@@ -83,7 +82,6 @@ public class ColorCanvas extends Canvas {
 	}
 
 	private void this_mouseReleased(MouseEvent e) {this_mouseClicked(e);}
-
 	private void this_mouseDragged(MouseEvent e) {this_mouseClicked(e);}
 
 }

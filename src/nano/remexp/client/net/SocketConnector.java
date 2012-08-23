@@ -24,9 +24,9 @@ public class SocketConnector extends ThreadHandler{
 	 * Instantiates an object of this class and starts to try connecting to the remote
 	 * experiment's host address. 
 	 * 
-	 * @param listener The applet that handles the communication coming from and going to this socket.
-	 * @param url The remote experiment's host URL.
-	 * @param newPort The remote experiment's host port.
+	 * @param listener	The applet that handles the communication coming from and going to this socket.
+	 * @param url 		The remote experiment's host URL.
+	 * @param newPort 	The remote experiment's host port.
 	 */
     public SocketConnector(ClientApplet listener, String url, int newPort){
     	myListener = listener;
@@ -40,8 +40,7 @@ public class SocketConnector extends ThreadHandler{
      * The lifecycle loop of this thread tries in intervals to connect to a remote host
      * and passes the acquired socket to the listener that is in need for this socket.
      */
-	@Override
-	public void doTask() {
+	@Override public void doTask() {
 		if(socketConnector == null){
 			try {
 				socketConnector = new Socket(remoteURL, remotePort);
@@ -62,25 +61,37 @@ public class SocketConnector extends ThreadHandler{
 			Thread.sleep(3000);
 		} catch (InterruptedException e) {}
 	}
-	/*
-	public void restartConnecting(){
-		releaseSocket();
-		if(!this.isAliveThread()) restart();
-	}*/
 	
-	public void setHost(String url, int port){
+	/**
+	 * Sets the host information this thread tries to connect to.
+	 * 
+	 * @param url	the url of the host
+	 * @param port	the port of the host
+	 */
+	protected void setHost(String url, int port){
 		setURL(url);
 		setPort(port);
 	}
 	
-	public void setURL(String url){
+	/**
+	 * Sets the url of the remote host.
+	 * @param url	the url of the remote host
+	 */
+	private void setURL(String url){
 		remoteURL = url;
 	}
 	
-	public void setPort(int port){
+	/**
+	 * Sets the port of the remote host.
+	 * @param port
+	 */
+	private void setPort(int port){
 		remotePort = port;
 	}
 
+	/**
+	 * Releases the socket connector and gives it a new chance to connect to a host.
+	 */
 	public void releaseSocket(){
 		if(socketConnector != null){
 			try {

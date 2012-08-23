@@ -6,15 +6,12 @@ import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseEvent;
 import java.net.Socket;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import nano.debugger.Debg;
-import nano.remexp.Password;
-import nano.remexp.client.awt.ImagePanel;
 import nano.remexp.client.awt.LineSection;
 import nano.remexp.client.awt.NetObserver;
 import nano.remexp.client.net.ClientConnection;
@@ -26,31 +23,14 @@ import nano.remexp.net.SocketReceiver;
 import nano.remexp.net.StreamSocket;
 import nano.remexp.net.StreamSocketInterface;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.ActionMap;
-import javax.swing.ImageIcon;
-import javax.swing.InputMap;
 import javax.swing.JApplet;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-/*import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;*/
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-import javax.swing.JTextPane;
-import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.UIManager.LookAndFeelInfo;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Style;
 
 /**
  * This is the remote client for the virtual experiments, introduced in late 2011
@@ -67,34 +47,27 @@ import javax.swing.text.Style;
  */
 
 public class ClientApplet extends JApplet implements SocketReceiver, StreamSocketInterface {
-	public static final String IMAGE_DIR = "images/";
-	
+
 	private static final long serialVersionUID = 1L;
-	private static final int guiWidth = 550;
-	private static final int guiHeight = 665;
-	private JTextPane statusLine;
-	private JComboBox comboBoxScanRange, comboBoxSample;
-	private String lastPosition = "";
 	private ClientGUI gui;
-	private Style style;
-	private ParameterPopup popupWindow;
 	private SocketConnector satStream;
 	private SocketConnector satEvent;
 	private ClientConnection serverEvent;
 	private StreamSocket serverStream;
 	private NetObserver myImage;
 	private LineSection myLiner;
-	private String hostURL, userID, messageHistory;
+	private String hostURL, userID;
 	private int eventPort, streamPort;
 	private NanoSocketObserver socketObserver;
+	private Vector<String> startUpEvents;
 
 	/**
 	 * Initialization of the applet, trying to set Nimbus look and feel.
 	 */
 	public void init() {
-		Debg.setDebugMode(null, Debg.DEBUGMODE_FULL, Debg.DEBUGMODE_NODEBUG);
+		startUpEvents = new Vector<String>();
+		Debg.setDebugMode(null, Debg.DEBUGMODE_STDOUT);
 		userID = null;
-        messageHistory = "";
 		try {
 			for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
 				if ("Nimbus".equals(info.getName())) {
@@ -135,12 +108,10 @@ public class ClientApplet extends JApplet implements SocketReceiver, StreamSocke
 			ex.printStackTrace();
 		}
 		Debg.print("Finished applet initialization");
-		printInfo(messageHistory);
-		messageHistory = "";
 	}
 	
 	/**
-	 * Extracts the version number of a string array, according to the java versioning conventions.
+	 * Extracts the version number of a string array, according to the java version conventions.
 	 * 
 	 * @param version The String array containing the version information.
 	 * @param index The index in the string array to be extracted into an integer.
@@ -161,12 +132,11 @@ public class ClientApplet extends JApplet implements SocketReceiver, StreamSocke
 	}
 	
 	/**
-	 * Retreiving the necessary parameters url, eventport and streamport.
+	 * Retrieving the necessary parameters url, eventport and streamport.
 	 * Initializing the GUI and starting connecting on the ports to the 
 	 * remote experiment broadcaster.
 	 */
 	private void initComponents() {
-		popupWindow = new ParameterPopup();
 		hostURL = getParameter("url");
 		String tmpEventPort = getParameter("eventport");
 		String tmpStreamPort = getParameter("streamport");
@@ -192,138 +162,59 @@ public class ClientApplet extends JApplet implements SocketReceiver, StreamSocke
 		
 		Debg.print("Socket connectors and observer initialized, initializing GUI");
 		
-		JPanel panelWindow = new JPanel();
-		ClientGUI.setupComponent(panelWindow, new Dimension(guiWidth, guiHeight));
-		panelWindow.setBackground(Color.white);
-		this.setSize(new Dimension(guiWidth, guiHeight));
-		this.setContentPane(panelWindow);
 		this.setBackground(Color.white);
-		
-		JLabel labelNano = new JLabel();
-		labelNano.setIcon(new ImageIcon(getClass().getResource(IMAGE_DIR + "nano_logo.jpg")));
-		ClientGUI.setupComponent(labelNano, new Dimension(500, 96));
-		ImagePanel myImagePanel = new ImagePanel(myImage);
-		JPanel panelGraphs = gui.setupGraphs(myImage, myLiner);
-		JPanel panelControls = gui.setupControls();
-		JPanel panelStatus = gui.setupStatusLine();
-		
-		//this.setJMenuBar(createMenuBar());
-		panelWindow.setLayout(new FlowLayout(FlowLayout.CENTER, 2, 2));
-		panelWindow.add(labelNano);
-		panelWindow.add(myImagePanel);
-		panelWindow.add(panelGraphs);
-		panelWindow.add(panelControls);
-		panelWindow.add(panelStatus);
+		this.setContentPane(gui.createWindow(myImage, myLiner));
 		
 		socketObserver = new NanoSocketObserver();
 		socketObserver.start("SocketObserver");
 		satStream = new SocketConnector(this, hostURL, streamPort);
 		satEvent = new SocketConnector(this, hostURL, eventPort);
-		gui.setInitialized(true);
+		gui.setInitialized();
+		for(String evt: startUpEvents) handleCBREvent(evt);
+		startUpEvents.clear();
 	}
-/*
-    public JMenuBar createMenuBar() {
-        JMenuBar menuBar = new JMenuBar();
-        JMenu menu = new JMenu("Menu");
-        JMenuItem menuItem;
-        menuBar.add(menu);
 
-        menuItem = new JMenuItem("Change Connection");
-        menuItem.addActionListener(new ActionListener(){
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				popupWindow.initConnectionPopup();
-				popupWindow.setVisible(true);
-			}
-		});
-        menu.add(menuItem);
-        menuItem = new JMenuItem("Login");
-        menuItem.addActionListener(new ActionListener(){
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				popupWindow.initLoginPopup();
-				popupWindow.setVisible(true);
-			}
-		});
-        menu.add(menuItem);
-        return menuBar;
-    }
-	*/
+	/**
+	 * Handles events coming from the remote experiment broadcaster and executes the
+	 * appropriate command on the GUI.
+	 * 
+	 * @param evt	the event message that was sent by the remote experiment broadcaster 
+	 */
     public void handleCBREvent(String evt){
-    	Debg.print("Communication: " + evt);
-		if(evt.contains(NanoComm.COMMAND_PARAM)){
-			gui.setParameter(evt);
-		} else if(evt.contains(NanoComm.COMMAND_STATE)){
-			gui.setState(Integer.parseInt(evt.substring(NanoComm.COMMAND_STATE.length() + 1)));
-		} else if(evt.contains(NanoComm.COMMAND_INFO)){
-			gui.setInfo(Integer.parseInt(evt.substring(NanoComm.COMMAND_INFO.length() + 1)));
-		} else if(evt.contains(NanoComm.COMMAND_PRIV)){
-			gui.setPrivilege(Integer.parseInt(evt.substring(NanoComm.COMMAND_PRIV.length() + 1)));
-		}
-	}
-
-	protected void setScanRangeComboBox(JComboBox box){comboBoxScanRange = box;}
-	protected void setSampleComboBox(JComboBox box){comboBoxSample = box;}
-	protected void setStatusStyle(Style s){style = s;}
-	protected void setStatusLine(JTextPane tp){statusLine = tp;}
-	protected void buttonApproachActionPerformed(ActionEvent evt) {serverEvent.send(NanoComm.strCmd(NanoComm.CMD_AUTOAPPROACH));}
-	protected void buttonWithdrawActionPerformed(ActionEvent evt) {serverEvent.send(NanoComm.strCmd(NanoComm.CMD_WITHDRAW));}
-	protected void buttonStartActionPerformed(ActionEvent evt) {serverEvent.send(NanoComm.strCmd(NanoComm.CMD_START));}
-	protected void buttonStopActionPerformed(ActionEvent evt) {serverEvent.send(NanoComm.strCmd(NanoComm.CMD_STOP));}
-	protected void buttonStopStageActionPerformed(ActionEvent evt) {serverEvent.send(NanoComm.strCmd(NanoComm.CMD_STOPAPPROACH));}
-	protected void buttonCamAngleActionPerformed(ActionEvent evt) {serverEvent.send(NanoComm.strCmd(NanoComm.CMD_CAMANGLE));}
-	
-	protected void buttonSaveActionPerformed(ActionEvent evt) {
-		JFileChooser fcd = new JFileChooser();
-		fcd.showSaveDialog(this);
-		if(fcd != null){
-			if(fcd.getSelectedFile() != null){
-				System.out.println("Saved as " + fcd.getSelectedFile());
-				myImage.saveImage(fcd.getSelectedFile());
+    	if(!gui.isInitialized()){
+    		startUpEvents.add(evt);
+    	} else {
+	    	Debg.print("Communication: " + evt);
+			if(evt.contains(NanoComm.COMMAND_PARAM)){
+				gui.setParameter(evt);
+			} else if(evt.contains(NanoComm.COMMAND_STATE)){
+				gui.setState(evt);
+			} else if(evt.contains(NanoComm.COMMAND_INFO)){
+				gui.setInfo(evt);
+			} else if(evt.contains(NanoComm.COMMAND_PRIV)){
+				gui.setPrivilege(Integer.parseInt(evt.substring(NanoComm.COMMAND_PRIV.length() + 1)));
 			}
-		}
+    	}
 	}
 	
-	protected void buttonLoginActionPerformed(ActionEvent evt) {
-		popupWindow.initLoginPopup();
-		popupWindow.setVisible(true);
-	}
-
-	protected void comboBoxScanRangeActionPerformed(ActionEvent evt) {
-		String cbEntry = (String) comboBoxScanRange.getSelectedItem();
-		// only if a button has been pressed it was a user input. else it has been changed via the server
-		if(evt.getModifiers() > 0) {
-			serverEvent.send(NanoComm.strCmd(NanoComm.CMD_SCANRANGE + " value=" + cbEntry.substring(0, cbEntry.length() - 3)));
-		}
-	}
-	
-	protected void comboBoxSampleActionPerformed(ActionEvent evt) {
-		String choice = (String)comboBoxSample.getSelectedItem();
-		// only if a button has been pressed it was a user input. else it has been changed via the server
-		if(evt.getModifiers() > 0) {
-			if(choice.equals("Calibrate")) {
-				serverEvent.send(NanoComm.strCmd(NanoComm.CMD_CALIBRATESTAGE));
-			} else {
-				if(!choice.equals(lastPosition)){
-					serverEvent.send(NanoComm.strCmd(gui.getSampleCommand(choice)));
-				}
-			}
-		}
-		lastPosition = choice;
-	}
-	
-	protected void labelArrowUpActionPerformed(MouseEvent e) {sendArrowCommand("up");}
-	protected void labelArrowRightActionPerformed(MouseEvent evt) {sendArrowCommand("right");}
-	protected void labelArrowLeftActionPerformed(MouseEvent evt) {sendArrowCommand("left");}
-	protected void labelArrowDownActionPerformed(MouseEvent evt) {sendArrowCommand("down");}
-	
-	private void sendArrowCommand(String direction){
-		if(serverEvent != null) serverEvent.send(NanoComm.strCmd(NanoComm.CMD_MOVETIP + " value=" + direction));
-	}
-	
+    /**
+     * Retrieves the line that is currently read by the remote experiment.
+     * 
+     * @return	the index of the line that is read or has last been read
+     */
 	protected int getCurrentLine(){
 		if(myImage == null) return 0;
 		else return myImage.getCurrentLine();
+	}
+	
+	/**
+	 * This function packs strings of information into the protocol,
+	 * so it is recognized as informatio to the client.
+	 * 
+	 * @param message	the message that is meant for the client
+	 */
+	public void printInfo(String message){
+		gui.setInfo(NanoComm.strInfo(NanoComm.INFO_MSG_TO_CLIENT) + " " + message);
 	}
 	
 	/**
@@ -338,23 +229,37 @@ public class ClientApplet extends JApplet implements SocketReceiver, StreamSocke
 		} else Debg.err("tried again to set user ID");
 	}
 	
-	protected void sendAdminCommand(String message){
-		serverEvent.send(message);
+	/**
+	 * Opens the file chooser dialog that allows the user to store the scanned image.
+	 */
+	protected void saveImage(){
+		JFileChooser fcd = new JFileChooser();
+		fcd.showSaveDialog(this);
+		if(fcd != null){
+			if(fcd.getSelectedFile() != null){
+				Debg.print("Saved as " + fcd.getSelectedFile());
+				myImage.saveImage(fcd.getSelectedFile());
+			}
+		}
 	}
 	
 	/**
-	 * Add information to the status box.
+	 * This function packs a string into the command protocol so it is recognized 
+	 * as a command. It is then sent to the server through the event socket.
 	 * 
-	 * @param msg The message to add.
+	 * @param message	the command message to be sent to the server
 	 */
-	public void printInfo(String msg){
-		if(statusLine == null) messageHistory = msg + "\n" + messageHistory;
-		else {
-			try {
-				statusLine.getDocument().insertString(0, msg + "\n", style);
-				statusLine.setCaretPosition(0);
-			} catch (BadLocationException e) {}
-		}
+	protected void sendCommand(String message){
+		sendString(NanoComm.strCmd(message));
+	}
+	
+	/**
+	 * Sends a plain string to the remote experiment broadcaster
+	 * 
+	 * @param message	the message to be sent
+	 */
+	private void sendString(String message){
+		serverEvent.send(message);
 	}
 
 	/**
@@ -372,38 +277,47 @@ public class ClientApplet extends JApplet implements SocketReceiver, StreamSocke
 			socketObserver.addSocket(serverStream);
 			Debg.print("Stream socket connected");
 		} else Debg.err("Odd SocketAcceptThread tries to add socket... " + port);
-		if(serverEvent.isConnected() && serverStream != null) {
-			gui.setServerConnected(true);
-			printInfo("Successfully connected to server!");
-		}
+		checkConnectivity();
 	}
 	
+	/**
+	 * Checks whether stream and event socket to the remote experiment broadcatser
+	 * are up and running, then informs the GUI about the current state.
+	 */
+	protected void checkConnectivity(){
+		if(serverEvent.isConnected() && serverStream != null) {
+			handleCBREvent(NanoComm.strInfo(NanoComm.INFO_SERVER_CONNECTED));
+		} else handleCBREvent(NanoComm.strInfo(NanoComm.INFO_SERVER_DISCONNECTED));
+	}
+	
+	/**
+	 * Removes the stream socket to the remote experiment broadcaster
+	 */
 	@Override
 	public void removeStreamSocket(StreamSocket sock) {
 		Debg.print("Removing Stream Socket");
-		gui.setServerConnected(false);
+		gui.setInfo(NanoComm.strInfo(NanoComm.INFO_SERVER_DISCONNECTED));
 		socketObserver.removeSocket(sock);
 		serverStream = null;
 		satStream.releaseSocket();
 	}
-	
+
+	/**
+	 * Removes the event socket to the remote experiment broadcaster
+	 */
 	public void removeEventSocket(EventSocket sock){
 		Debg.print("Removing Event Socket");
-		gui.setServerConnected(false);
+		gui.setInfo(NanoComm.strInfo(NanoComm.INFO_SERVER_DISCONNECTED));
 		socketObserver.removeSocket(sock);
 		satEvent.releaseSocket();
 	}
-	/*
-	private void reconnectToHost(){
-		gui.setServerConnected(false);
-		serverEvent.releaseSocket();
-		if(serverStream != null)serverStream.shutDown();
-		satEvent.setHost(hostURL, eventPort);
-		satStream.setHost(hostURL, streamPort);
-		satEvent.restartConnecting();
-		satStream.restartConnecting();
-	}
-	*/
+	
+	/**
+	 * A pop-up that can be displayed to inform the user about especially important things
+	 * 
+	 * @author Dominic Bosch
+	 * @version 1.1 29.08.2012
+	 */
 	private class AlertPopup extends JFrame{
 		private static final long serialVersionUID = 1L;
 		
@@ -428,153 +342,5 @@ public class ClientApplet extends JApplet implements SocketReceiver, StreamSocke
 			setVisible(false);
 		}
 	}
-
-	private class ParameterPopup extends JFrame{
-		private static final long serialVersionUID = 1L;
-		private JTextField fieldOne;
-		private JTextField fieldTwo;
-		private JTextField fieldThree;
-	    private JPanel contentPanel;
-		
-		private ParameterPopup(){
-			setBackground(Color.white);
-		    contentPanel = new JPanel();
-			ClientGUI.setupComponent(contentPanel, new Dimension(305, 25));
-            add(contentPanel);
-		}
-
-		protected void initLoginPopup(){
-			contentPanel.removeAll();
-			JLabel labelText = new JLabel("Please enter your credentials: ");
-			JLabel labelUser = new JLabel("Username: ");
-			fieldOne = new JTextField();
-			JLabel labelPass = new JLabel("Password: ");
-			fieldTwo = new JPasswordField();
-			JButton ok = new JButton("Ok");
-			addEnterKeyToComponent(ok, ok);
-			addEnterKeyToComponent(fieldOne, ok);
-			addEnterKeyToComponent(fieldTwo, ok);
-			ok.addActionListener(new ActionListener(){
-				@Override public void actionPerformed(ActionEvent arg0) {login();}
-			});
-			JButton cancel = new JButton("Cancel");
-			cancel.addActionListener(new ActionListener(){
-				@Override public void actionPerformed(ActionEvent arg0) {hidePopup();}
-			});
-			contentPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-			ClientGUI.setupComponent(labelText, new Dimension(305, 25));
-			ClientGUI.setupComponent(labelUser, new Dimension(100, 25));
-			ClientGUI.setupComponent(fieldOne, new Dimension(200, 25));
-			ClientGUI.setupComponent(labelPass, new Dimension(100, 25));
-			ClientGUI.setupComponent(fieldTwo, new Dimension(200, 25));
-			ClientGUI.setupComponent(ok, new Dimension(80, 25));
-			ClientGUI.setupComponent(cancel, new Dimension(80, 25));
-			ClientGUI.setupComponent(this, new Dimension(350, 175));
-			contentPanel.setBackground(Color.white);
-			contentPanel.add(labelText);
-			contentPanel.add(labelUser);
-			contentPanel.add(fieldOne);
-			contentPanel.add(labelPass);
-			contentPanel.add(fieldTwo);
-			contentPanel.add(ok);
-			contentPanel.add(cancel);
-		}
-/*
-		protected void initConnectionPopup(){
-			contentPanel.removeAll();
-			JLabel labelText = new JLabel("Please enter the host information: ");
-			JLabel labelUser = new JLabel("Host: ");
-			fieldOne = new JTextField();
-			JLabel labelEPort = new JLabel("Event-Port: ");
-			fieldTwo = new JTextField();
-			JLabel labelSPort = new JLabel("Data-Port: ");
-			fieldThree = new JTextField();
-			JButton ok = new JButton("Ok");
-			addEnterKeyToComponent(ok, ok);
-			addEnterKeyToComponent(fieldOne, ok);
-			addEnterKeyToComponent(fieldTwo, ok);
-			addEnterKeyToComponent(fieldThree, ok);
-			
-			ok.addActionListener(new ActionListener(){
-				@Override public void actionPerformed(ActionEvent arg0) {connect();}});
-			JButton cancel = new JButton("Cancel");
-			cancel.addActionListener(new ActionListener(){
-				@Override public void actionPerformed(ActionEvent arg0) {hidePopup();}
-			});
-			contentPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-			ClientGUI.setupComponent(labelText, new Dimension(305, 25));
-			ClientGUI.setupComponent(labelUser, new Dimension(100, 25));
-			ClientGUI.setupComponent(fieldOne, new Dimension(200, 25));
-			ClientGUI.setupComponent(labelEPort, new Dimension(100, 25));
-			ClientGUI.setupComponent(fieldTwo, new Dimension(200, 25));
-			ClientGUI.setupComponent(labelSPort, new Dimension(100, 25));
-			ClientGUI.setupComponent(fieldThree, new Dimension(200, 25));
-			ClientGUI.setupComponent(ok, new Dimension(80, 25));
-			ClientGUI.setupComponent(cancel, new Dimension(80, 25));
-			ClientGUI.setupComponent(this, new Dimension(350, 200));
-			contentPanel.setBackground(Color.white);
-			fieldOne.setText(hostURL);
-			fieldTwo.setText(""+eventPort);
-			fieldThree.setText(""+streamPort);
-			contentPanel.add(labelText);
-			contentPanel.add(labelUser);
-			contentPanel.add(fieldOne);
-			contentPanel.add(labelEPort);
-			contentPanel.add(fieldTwo);
-			contentPanel.add(labelSPort);
-			contentPanel.add(fieldThree);
-			contentPanel.add(ok);
-			contentPanel.add(cancel);
-		}
-*/
-		private void  addEnterKeyToComponent(JComponent comp, JButton pressButton){
-			String actionKey = pressButton.toString();
-		    InputMap inputMap = comp.getInputMap();
-			ActionMap actionMap = comp.getActionMap();
-
-		    Action actionListener = new ButtonPresser(pressButton);
-			actionMap.put(actionKey, actionListener);
-		    inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0, true), actionKey);
-		    comp.setActionMap(actionMap);
-		}
-		
-		class ButtonPresser extends AbstractAction{
-	    	private JButton pressMe;
-	    	public ButtonPresser(JButton b){pressMe = b;}
-	    	public void actionPerformed(ActionEvent e) {pressMe.doClick();}
-		}
-		
-		private void login(){
-			serverEvent.send(NanoComm.strCmd("login username=" + fieldOne.getText() 
-					+ " password=" + Password.computeHashHex(fieldTwo.getText())));
-			hidePopup();
-		}
-/*
-		private void connect(){
-			String tmpURL;
-			int tmpEvt, tmpStream;
-			Debg.print("Connecting to " + fieldOne.getText() + " on ports " + fieldTwo.getText() + " and " + fieldThree.getText());
-			tmpURL = hostURL;
-			tmpEvt = eventPort;
-			tmpStream = streamPort;
-			hostURL = fieldOne.getText();
-			try{
-				eventPort = Integer.parseInt(fieldTwo.getText());
-				streamPort = Integer.parseInt(fieldThree.getText());
-				reconnectToHost();
-			} catch (NumberFormatException e){
-				printInfo("Invalid host connection parameters!");
-				hostURL = tmpURL;
-				eventPort = tmpEvt;
-				streamPort = tmpStream;
-			}
-			hidePopup();
-		}
-		*/
-		private void hidePopup(){
-			setVisible(false);
-		}
-	}
-
 
 }

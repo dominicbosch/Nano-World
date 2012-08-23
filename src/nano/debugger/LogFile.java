@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 import nano.remexp.ThreadHandler;
 
 /**
- * 
+ * This class gives tools to maintain a log file and also keep track of running htreads.
  * 
  * @author Dominic Bosch
  * @version 1.1 23.08.2012
@@ -26,6 +26,13 @@ public class LogFile {
 	public Logger log;
 	FileHandler fh;
 
+	/**
+	 * Invokes an object that passes information to a log file. This function also adds 
+	 * a simple format to the log file output.
+	 * 
+	 * @param logFileName	The extension of the log file. It is added to a date string and a
+	 * 						sequential number that is used to increase if the log file grows too big. 
+	 */
 	public LogFile(String logFileName){
 		threadList = new Vector<ThreadHandler>();
 		try {
@@ -48,28 +55,56 @@ public class LogFile {
 		}
 	}
 	
+	/**
+	 * Places information in the log file.
+	 * 
+	 * @param msg the string to be stored in the log file.
+	 */
 	public void addToLog(String msg){
-		log.info(msg);
+		if(log!=null) log.info(msg);
 	}
 	
+	/**
+	 * Adds a string to the list of observed @see ThreadHandler.
+	 * 
+	 * @param th the thread to be observed
+	 */
 	public void addThread(ThreadHandler th){
-		threadList.add(th);
-		printThreadNames();
+		if(threadList!=null){
+			threadList.add(th);
+			printThreadNames();
+		}
 	}
 	
+	/**
+	 * Removes a thread from the list of observed @see ThreadHandler.
+	 * @param th the thread to be removed from the list
+	 */
 	public void removeThread(ThreadHandler th){
-		threadList.remove(th);
-		printThreadNames();
+		if(threadList!=null){
+			threadList.remove(th);
+			printThreadNames();
+		}
 	}
 	
+	/**
+	 * Sends a list of running threads to the debug module.
+	 */
 	public void printThreadNames(){
 		String thds = "Running " + threadList.size() + " Threads: ";
 		for(ThreadHandler th: threadList) thds += th.getThreadName() + ", ";
 		Debg.print(thds);
 	}
 	
+	/**
+	 * Closes the log file and clean the list of observed threads.
+	 */
 	public void closeLog(){
+		threadList.clear();
+		threadList = null;
 		fh.close();
+		fh = null;
+		log = null;
 	}
 	
 }

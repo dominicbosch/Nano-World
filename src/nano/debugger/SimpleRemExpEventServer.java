@@ -7,6 +7,8 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+import nano.remexp.broadcaster.locks.ScanningLock;
+
 /**
  * Used to imitate the remote experiments server by sending events captured by the standard input.
  * 
@@ -20,13 +22,12 @@ public class SimpleRemExpEventServer {
         PrintWriter out = null;
         BufferedReader in = null;
         //String host = "131.152.85.135";
-        //String host = "127.0.0.1";
-        String host = "rafmdmzdsvr.cs.unibas.ch";
+        String host = "127.0.0.1";
+        //String host = "rafmdmzdsvr.cs.unibas.ch";
         try {
             echoSocket = new Socket(host, 8012);
             out = new PrintWriter(echoSocket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-			//new SocketListener(in, this);
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host: " + host);
             System.exit(1);
@@ -40,7 +41,6 @@ public class SimpleRemExpEventServer {
 		System.out.println("Initialized");
 		try {
 			while(doRun){
-			//while ((userInput = stdIn.readLine()) != null) {
 				answer = "";
 				clientInput = in.readLine();
 				if(clientInput.indexOf("command=ping") == -1) System.out.println("Received from CBR: " + clientInput);
@@ -71,8 +71,8 @@ public class SimpleRemExpEventServer {
 
 	private String processClientInput(String input){
 		String answer = "";
-		Debg.print("processed: " + answer);
-		if(input.equals("command=goto1")) answer = "P1 OK";
+		if(input.equals("command=goto0")) answer = "P0 OK";
+		else if(input.equals("command=goto1")) answer = "P1 OK";
 		else if(input.equals("command=goto2")) answer = "P2 OK";
 		else if(input.equals("command=goto3")) answer = "P3 OK";
 		else if(input.equals("command=goto4")) answer = "P4 OK";
@@ -82,7 +82,11 @@ public class SimpleRemExpEventServer {
 		else if(input.equals("command=withdraw")) answer = "Withdrawn";
 		else if(input.equals("command=ping")) answer = "command=pong";
 		else if(input.equals("command=calibratestage")) answer = "Instrument Calibrated";
-		Debg.print("processed: " + answer);
+		else if(input.equals("command=videoa")) answer = "StatusPrompt";
+		else if(input.equals("command=videob")) answer = "StatusPrompt";
+		else if(input.startsWith("command=adjustaxis")) answer = "Customposition : ";
+		else if(input.startsWith("command=set name=scanrange")) answer = "savage";
+		else answer = "I had no idea what to do...";
 		return answer;
 	}
 	

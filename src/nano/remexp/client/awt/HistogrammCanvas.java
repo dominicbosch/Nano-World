@@ -33,20 +33,13 @@ public class HistogrammCanvas extends Canvas implements MouseListener {
 		addMouseListener(this);
 	}
 
-	public Dimension getPreferredSize() {
-		return new Dimension(256, 256);
-	}
+	public Dimension getPreferredSize() {return new Dimension(256, 256);}
 
-	public Dimension getMinimumSize() {
-		return new Dimension(256, 256);
-	}
+	public Dimension getMinimumSize() {return new Dimension(256, 256);}
 
 	public void mouseReleased(MouseEvent e) {}
-
 	public void mouseClicked(MouseEvent e) {}
-
 	public void mouseExited(MouseEvent e) {}
-
 	public void mouseEntered(MouseEvent e) {}
 
 	public void mousePressed(MouseEvent e) {

@@ -6,11 +6,14 @@
 	<property name="build.dir" value="bin" />
 	<property name="jardist.dir" value="jardist"/>
 	<property name="doc.dir" value="doc"/>
+	<property name="lib.dir" value="lib"/>
+	<property name="keystorePath" location="${lib.dir}/nanoKeystore"/>
+	<property name="keystoreAlias" value="nanoremexp"/>
+	<property name="keystorePassword" value="r3m3xp"/>
 
 	<target name="clean">
 		<delete dir="${build.dir}"/>
 		<delete dir="${jardist.dir}"/>
-		<delete dir="${doc.dir}"/>
 		<delete dir="bin"/>
 	</target>
 
@@ -24,57 +27,76 @@
 		<javac srcdir="${src.dir}" destdir="${build.dir}" deprecation="on" >
 			<classpath>
 				<pathelement path="${build.dir}" />
-				<fileset dir="lib">
+				<fileset dir="${lib.dir}">
 					<include name="**/*.jar" />
 				</fileset>
 			</classpath>
+            <!--<compilerarg line="-Xlint:unchecked" />--><!-- Remove comment to see more about unchecked warnings -->
 		</javac>
 		<copy todir="${build.dir}">
 			<fileset dir="${src.dir}" includes="**/*.jpg **/*.png" />
 		</copy>
 	</target>
 
-	<target name="dist" depends="compile">
+	<target name="gen-keystore">
+	   <delete file="${keystorePath}" failonerror="false" />
+	   <genkey keystore="${keystorePath}" alias="${keystoreAlias}" storepass="${keystorePassword}">
+	      <dname>
+		      <param name="CN" value="Dominic Bosch"/>
+		      <param name="OU" value="Department of Mathematics and Computer Science, High Performance Computing Reasearch Group"/>
+		      <param name="O" value="University of Basel, Switzerland"/>
+		      <param name="L" value="Basel"/>
+		      <param name="ST" value="Basel-Stadt"/>
+		      <param name="C" value="CH"/>   
+	      </dname>
+	   </genkey>
+
+	</target>
+	
+	<target name="dist" depends="compile,gen-keystore">
 		<jar id="files" jarfile="${jardist.dir}/nano-remexp.jar">
 			<fileset dir="${build.dir}"/>
-		    <zipfileset src="lib/Jama-1.0.2.jar" includes="**/*.java **/*.class"/>
+		    <zipfileset src="${lib.dir}/Jama-1.0.2.jar" includes="**/*.java **/*.class"/>
+		</jar>
+		<jar id="filesServer" jarfile="${jardist.dir}/nano-remexp-server.jar">
+			<fileset dir="${build.dir}">
+				<exclude name="nano/remexp/client/*"/>
+			</fileset>
+		    <zipfileset src="${lib.dir}/Jama-1.0.2.jar" includes="**/*.java **/*.class"/>
+		</jar>
+		<jar id="filesClient" jarfile="${jardist.dir}/nano-remexp-client.jar">
+			<fileset dir="${build.dir}">
+				<exclude name="nano/remexp/broadcaster/*"/>
+			</fileset>
+		    <zipfileset src="${lib.dir}/Jama-1.0.2.jar" includes="**/*.java **/*.class"/>
 		</jar>
 <!--
 Be sure you included the path to the jarsigner in your system PATH.
 e.g.: [...]/jdk1.7.0/bin
  -->
 		<signjar jar="${jardist.dir}/nano-remexp.jar"
-			keystore="lib/nanoKeystore" storepass="lilaRAFM"
-			alias="rafmkey" keypass="v3xpRAFM" />
+			keystore="${keystorePath}" storepass="${keystorePassword}"
+			alias="${keystoreAlias}" />
+	
+		<signjar jar="${jardist.dir}/nano-remexp-client.jar"
+			keystore="${keystorePath}" storepass="${keystorePassword}"
+			alias="${keystoreAlias}" />
 	</target>
 	
-	<target name="doc" depends="compile">
+	<target name="doc" depends="dist">
+		<delete dir="${doc.dir}"/>
 		<mkdir dir="${doc.dir}"/>
-		<!-- Make JavaDoc of the sourcefiles and put it into doc/ -->
-		<javadoc packagenames="nano.debugger, nano.remexp, nano.remexp.broadcaster, 
-			nano.remexp.broadcaster.net, nano.remexp.client, nano.remexp.client.awt, 
-			nano.remexp.client.net, nano.remexp.net" sourcepath="src" destdir="doc" classpath="lib/Acme.jar" />
+		<javadoc packagenames="nano.*" 
+			sourcepath="src" 
+			destdir="doc" 
+			classpath="${lib.dir}/Jama-1.0.2.jar" 
+	        author="true"
+	        version="true"
+	        use="true"
+	        windowtitle="VEXP">
+				<doctitle><![CDATA[<h1>REMEXP nano-world.org</h1>]]></doctitle>
+				<bottom><![CDATA[<i>Copyright &#169; 2012 nano-world.org, Inc. All Rights Reserved</i>]]></bottom>
+		</javadoc>
 	</target>
-
-	<!-- Creates the API javadocs. -->
-	<target name="docs" >
-		<mkdir dir="${build.dir}/api"/>
-		<javadoc
-        sourcefiles=""
-        packagenames="${packages}"
-        sourcepath="src"
-        classpath="${build.dir};lib/Acme.jar"
-        destdir="${build.dir}/api"
-        author="true"
-        version="true"
-        use="true"
-        windowtitle="VEXP">
-			<doctitle>
-				<![CDATA[<h1>VEXP nano-world.org</h1>]]></doctitle>
-		<bottom>
-			<![CDATA[<i>Copyright &#169; 2003 nano-world.org, Inc. All Rights Reserved</i>]]></bottom>
-</javadoc>
-</target>
-
 
 </project>

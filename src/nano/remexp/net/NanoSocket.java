@@ -10,7 +10,9 @@ import nano.debugger.Debg;
 import nano.remexp.ThreadHandler;
 
 /**
- * 
+ * The lowest layer of the communication between the different architectural parts.
+ * Through this we are able to observe all currently running sockets and close them
+ * if they aren't useful anymore.
  * 
  * @author Dominic Bosch
  * @version 1.1 23.08.2012
@@ -66,6 +68,11 @@ public abstract class NanoSocket extends ThreadHandler{
         lastSignOfLife = new Date().getTime();
 	}
 
+	/**
+	 * Returns the information whether this socket should be active
+	 * @return	true if it is in a an active state (e.g. the stream socket during scanning), else false
+	 * FIXME this active state in the stream socket needs to be checked during measurements
+	 */
 	public boolean isActiveSocket(){
 		return isActive;
 	}
@@ -108,23 +115,23 @@ public abstract class NanoSocket extends ThreadHandler{
         }
     }
 
-    public boolean isDead(){
-    	return isDead;
-    }
-    
-    public abstract void ping();
-    
 	/**
 	 * This method should be overwritten by the classes that extend this basic class.
 	 * @see nano.remexp.ThreadHandler#doTask()
 	 */
-	@Override
-	public void doTask() {}
+	@Override public void doTask() {}
 	
+    /**
+     * Should implement the ping logic for this socket in order to check it for connectivity.
+     */
+    public abstract void ping();
+    
+	/**
+	 * This method needs to implement the logic if the socket should remove itself.
+	 */
 	protected abstract void removeYourself();
 	
-	@Override
-	public synchronized void shutDown() {
+	@Override public synchronized void shutDown() {
 		stopThread();
         try{
         	if(bos != null) bos.close();

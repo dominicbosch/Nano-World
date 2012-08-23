@@ -10,118 +10,144 @@ import nano.remexp.ThreadHandler;
 import nano.remexp.net.EventSocket;
 
 /**
- * A static Debugger to ease error tracking.
+ * A static Debugger to generally decide between System output, or log file, or both, or none.
  * 
  * @author Dominic Bosch
  * @version 1.1 23.08.2012
  */
 public class Debg {
+	// This will generate a continuous data stream from the CBR to the clients which helps debugging:
+	public static final boolean GENERATE_DATA = false;
+	private static final boolean DEBUG_STREAM = false; // set true if you want to see some stream data information
 
 	public static final int DEBUGMODE_NODEBUG = -1;
-	public static final int DEBUGMODE_REDUCED = 1;
-	public static final int DEBUGMODE_FULL = 2;
+	public static final int DEBUGMODE_STDOUT = 1;
+	public static final int DEBUGMODE_LOGFILE = 2;
+	public static final int DEBUGMODE_BOTH = 3;
 
 	public static final int MSG_NORMAL = 1;
 	public static final int MSG_ERROR = 2;
-	
-	// This will generate a continuous data stream from the CBR to the clients which helps debugging:
-	public static final boolean GENERATE_DATA = false; 
 
-	public static int debugModeConsole;
-	public static int debugModeLogFile;
+	public static int debugMode = DEBUGMODE_STDOUT;
 	private static LogFile log;
 
-	public static void setDebugMode(String logFileName, int dbgmodeCons, int dbgmodeLog){
-		debugModeConsole = dbgmodeCons;
-		debugModeLogFile = dbgmodeLog;
-		if(logFileName == null) debugModeLogFile = DEBUGMODE_NODEBUG;
-		if(dbgmodeLog > -1) log = new LogFile(logFileName);
-		String sc = getDebugModeInString(dbgmodeCons);
-		String sl = getDebugModeInString(dbgmodeLog);
-		print("Setting debug mode for Console: [" + sc + "] and for LogFile: [" + sl + "]");
+	/**
+	 * This allows the different running instances of the remexp package to choose their debug mode.
+	 * 
+	 * @param logFileName 	The string that goes between the date and the .log extension. Null if no logfile is used. 
+	 * @param dbgMode 		The desired debug mode:
+	 * 							DEBUGMODE_NODEBUG: no debug messages are displayed or stored.
+	 * 							DEBUGMODE_STDOUT: debug messages are printed to the standard output.
+	 * 							DEBUGMODE_LOGFILE: debug messages are stored in the logfile.
+	 * 							DEBUGMODE_NODEBUG: debug messages are printed to the standard output and stored in the logfile.
+	 */
+	public static void setDebugMode(String logFileName, int dbgMode){
+		debugMode = dbgMode;
+		if(logFileName == null){ // reduce debug mode if no log file was defined
+			if(debugMode == DEBUGMODE_LOGFILE) debugMode = DEBUGMODE_NODEBUG;
+			else if(debugMode == DEBUGMODE_BOTH) debugMode = DEBUGMODE_STDOUT; 
+		} else if(debugMode == DEBUGMODE_LOGFILE || debugMode == DEBUGMODE_BOTH) {
+			log = new LogFile(logFileName);
+		}
+		print("Setting debug mode to: [" + getDebugModeInString(dbgMode) + "]");
 	}
 	
+	/**
+	 * Return a string that describes the debug mode passed to this function.
+	 * 
+	 * @param mode 		the debug mode that shall be explained
+	 * @return			a string describging the debug mode
+	 */
 	private static String getDebugModeInString(int mode){
 		switch(mode){
 			case DEBUGMODE_NODEBUG:
 				return "NO DEBUG MESSAGES";
-			case DEBUGMODE_REDUCED:
-				return "REDUCED DEBUG MESSAGES";
-			case DEBUGMODE_FULL:
-				return "FULL DEBUG MESSAGES";
+			case DEBUGMODE_STDOUT:
+				return "DEBUG ON STDOUT";
+			case DEBUGMODE_LOGFILE:
+				return "DEBUG INTO LOGFILE";
+			case DEBUGMODE_BOTH:
+				return "DEBUG TO STDOUT AND LOGFILE";
 		}
 		return "[ERR] DEBUG MODE NOT HANDLED";
 	}
 
 	/**
-	 * Prints a string to the console if debugging is turned on.
+	 * Processes a normal debug message. 
 	 * 
-	 * @param msg The message to be printed to the console.
+	 * @param msg	the message to be processed
 	 */
 	synchronized public static void print(String msg){
 		spreadDebugMessage(msg, MSG_NORMAL);
 	}
-
-	/**
-	 * Prints a string with a certain indent to the console if debugging is turned on.
-	 * 
-	 * @param indent The indent to be added to the message.
-	 * @param msg The message to be printed to the console.
-	 *//*
-	synchronized public static void print(int indent, String msg){
-		spreadDebugMessage(shiftString(indent, "[" + getSource() + "] " + msg), MSG_NORMAL);
-	}*/
 	
+	/**
+	 * Processes an error debug message.
+	 * 
+	 * @param msg The error message to be processed.
+	 */
+	synchronized public static void err(String msg){
+		spreadDebugMessage(msg, MSG_ERROR);
+	}
+	
+	/**
+	 * Main procedure of this abstract class. We determine between normal and error messages and the debug mode and 
+	 * react accordingly. This method also adds a time stamp and the caller object information.
+	 * 
+	 * @param msg 		the message that has been sent for debugging
+	 * @param msgType 	either @see MSG_NORMAL or @see MSG_ERROR
+	 */
 	synchronized private static void spreadDebugMessage(String msg, int msgType){
 		String timeStamp = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date()) + ": ";		
 		msg = "[" + getSource() + "] " + msg;
-		switch(debugModeConsole){ 
-		case DEBUGMODE_FULL: case DEBUGMODE_REDUCED:
-			if(msgType == MSG_NORMAL){
-				System.out.println(timeStamp + msg);
-				if(debugModeLogFile > -1 && log != null) log.addToLog(timeStamp + msg);
-			}
-			else if(msgType == MSG_ERROR) {
-				System.err.println(timeStamp + "!ERROR! " + msg);
-				if(debugModeLogFile > -1 && log != null) log.addToLog(timeStamp + "!ERROR! " + msg);
-			}
+		switch(debugMode){ 
+			case DEBUGMODE_STDOUT:
+			case DEBUGMODE_BOTH:
+				if(msgType == MSG_NORMAL) System.out.println(timeStamp + msg);
+				else if(msgType == MSG_ERROR) System.err.println(timeStamp + "!ERROR! " + msg);
+				if(debugMode == DEBUGMODE_STDOUT) break; //only break when we don't want to write to the log file
+			case DEBUGMODE_LOGFILE:
+				if(debugMode> -1 && log != null){
+					if(msgType == MSG_NORMAL) log.addToLog(timeStamp + msg);
+					else if(msgType == MSG_ERROR) log.addToLog(timeStamp + "!ERROR! " + msg);
+				}
 		}
 	}
 	
+	/**
+	 * This class also allows thread tracking.
+	 * Every started @see ThreadHandler thread will be stored and kept track of until it dies.
+	 * This method adds a thread to the list of observed threads.
+	 * 
+	 * @param th	The new thread to be tracked
+	 */
 	synchronized public static void addThread(ThreadHandler th){
-		if(debugModeLogFile > -1 && log != null) log.addThread(th);
-	}
-	
-	synchronized public static void removeThread(ThreadHandler th){
-		if(debugModeLogFile > -1 && log != null) log.removeThread(th);
+		if(debugMode >= DEBUGMODE_LOGFILE && log != null) log.addThread(th);
 	}
 	
 	/**
-	 * Adds preceding whitespaces to a string and returns it.
+	 * Removes a thread from the list of observed threads during its death.
 	 * 
-	 * @param indent The number of whitespaces to be added.
-	 * @param msg The message that is returned with the added preceding whitespaces.
-	 * @return The resulting string.
+	 * @param th	the dying thread
 	 */
-	/*synchronized private static String shiftString(int indent, String msg){
-		return String.format("%" + (indent + 2) + "s", "") + msg;
-	}*/
-	
+	synchronized public static void removeThread(ThreadHandler th){
+		if(debugMode >= DEBUGMODE_LOGFILE && log != null) log.removeThread(th);
+	}
+
 	/**
 	 * This method is used to print a message together with a rough overview of the stream data
 	 * that is being passed to the method if debugging is turned on.
 	 * 
-	 * @param indent The number of preceding whitespaces for this message.
 	 * @param msg The message that is also printed.
 	 * @param b The byte array that is used to create a rough overview over the stream. 
 	 */
-	synchronized public static void print(int indent, String msg, byte[] b){
-		if(b.length == 0) spreadDebugMessage("[" + getSource() + "] " + msg + "No data found", MSG_NORMAL);
-		else {
-			String bstr = Byte.toString(b[0]);
-			int i, avg = 0;
-			byte min = Byte.MAX_VALUE, max = Byte.MIN_VALUE;
-			if(debugModeConsole > -1 || debugModeLogFile > -1) {
+	synchronized public static void print(String msg, byte[] b){
+		if(DEBUG_STREAM){
+			if(b.length == 0) spreadDebugMessage("[" + getSource() + "] " + msg + "No data found", MSG_NORMAL);
+			else {
+				String bstr = Byte.toString(b[0]);
+				int i, avg = 0;
+				byte min = Byte.MAX_VALUE, max = Byte.MIN_VALUE;
 				for(i = 1; i < b.length; i++){
 					bstr += "|" + b[i];
 					if(b[i] < min) min = b[i];
@@ -137,32 +163,11 @@ public class Debg {
 	}
 	
 	/**
-	 * This method is used to place an error message in the console if debugging is turned on. It adds
-	 * information about the calling source of this method to the error message.
-	 * 
-	 * @param msg The error message to be placed in the console.
-	 */
-	synchronized public static void err(String msg){
-		spreadDebugMessage(msg, MSG_ERROR);
-	}
-	
-	/**
-	 * Places a System.err.println, if debugging is turned on, with the message and preceding white spaces 
-	 * according to indent. It adds information about the calling source of this method to the error message.
-	 * 
-	 * @param indent The number of preceding white spaces.
-	 * @param msg The error message to be printed in the console. 
-	 *//*
-	synchronized public static void err(int indent, String msg){
-		spreadDebugMessage("[" + getSource() + "] " + msg, MSG_ERROR);
-	}*/
-	
-	/**
 	 * If a parse error happened for the tokens that are being sent through the event sockets,
 	 * this method allows to trace why the command wasn't recognized by the parser. 
 	 * 
-	 * @param cmd The command that was sent and has been tried to parse.
-	 * @param cmds The commands that were valid in the appropriate parser.
+	 * @param cmd	the command that was sent and has been tried to parse
+	 * @param cmds	the commands that were valid in the appropriate parser
 	 */
 	synchronized public static void explainParserError(String cmd, Hashtable<String, CommandExecutor> cmds){
 		String msg;
@@ -178,9 +183,9 @@ public class Debg {
 	}
 	
 	/**
-	 * This function invokes an exception object and backtraces through this the caller of this method.
+	 * This function invokes an exception object and finds the caller of this method.
 	 * 
-	 * @return The caller class and the line on which the command has been invoked.
+	 * @return The caller object and the line on which the command has been invoked.
 	 */
 	synchronized public static String getSource(){
 		String[] arr;
@@ -194,12 +199,7 @@ public class Debg {
 		line = stack[id].getLineNumber();
 		if(line == -1) srcLine = "";
 		else srcLine = ":" + line;
-		 
-		if(debugModeConsole == DEBUGMODE_FULL || debugModeLogFile == DEBUGMODE_FULL) return name + srcLine;
-		else {
-			String[] splittedName = name.split("\\.");
-			return splittedName[splittedName.length - 1] + srcLine;
-		}
+		return name + srcLine;
 	}
 	
 	/**
@@ -218,6 +218,9 @@ public class Debg {
 		else return stackEntryID + 1;
 	}
 	
+	/**
+	 * This method allows a clean end of the log file.
+	 */
 	public static void closeLog(){
 		log.closeLog();
 	}

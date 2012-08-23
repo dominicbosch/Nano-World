@@ -10,6 +10,7 @@ import java.net.Socket;
  * @version 1.1 23.08.2012
  */
 public interface SocketReceiver{
+	
 	/**
 	 * A new socket has been found and was reported, thus adding it
 	 * 

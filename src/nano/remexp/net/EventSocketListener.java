@@ -3,7 +3,7 @@ package nano.remexp.net;
 
 /**
  * An interface that enables classes to act as event socket listeners and
- * perform actions on events
+ * perform actions on events.
  * 
  * @author Dominic Bosch
  * @version 1.1 23.08.2012
@@ -30,7 +30,6 @@ public interface EventSocketListener {
 	 * @param sock The socket that tries to gain privileges.
 	 * @param user The username used to gain privileges.
 	 * @param pass The password passed as a MD-5 hash in case of a non-LiLa login, empty if LiLa login shall be attempted.
-	 * @return The privilege this user has now.
 	 */
 	public abstract void login(EventSocket sock, String user, String pass);
 }

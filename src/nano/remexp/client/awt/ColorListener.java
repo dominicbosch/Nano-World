@@ -3,7 +3,6 @@ package nano.remexp.client.awt;
 /**
  * Copyright: Copyright (c) 2012
  * 
- * @author
  * @version 1.1
  */
 

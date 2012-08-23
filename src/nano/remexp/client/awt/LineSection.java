@@ -7,6 +7,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 
 import nano.remexp.StreamReceiver;
+import nano.remexp.client.ClientGUI;
 
 /**
  * 
@@ -20,6 +21,7 @@ public class LineSection extends Canvas implements StreamReceiver {
 			numpoints = 256, plotlines = 2;
 
 	public LineSection() {
+		ClientGUI.setupComponent(this, new Dimension(256, 256));
 		myg = getGraphics();
 		setBackground(Color.black);
 		setForeground(Color.green);

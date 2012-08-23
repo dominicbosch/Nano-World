@@ -54,11 +54,8 @@ public class StreamSocket extends NanoSocket{
     	if(myDisplays != null) myDisplays.add(newDisplay);
     }
 
-	@Override
-	public void ping() {} // Ping is not necessary for the data stream
-    
-	@Override
-	protected void removeYourself() {
+	@Override public void ping() {} // Ping is not necessary for the data stream
+	@Override protected void removeYourself() {
 		if(chief != null) chief.removeStreamSocket(this);
 	}
 

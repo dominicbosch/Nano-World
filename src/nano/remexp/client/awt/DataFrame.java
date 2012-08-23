@@ -205,18 +205,7 @@ public class DataFrame extends JFrame {
 			add(ChangeColorButton, null);
 		}
 	}
-/*
-	private class DataOrLineListener implements ItemListener {
-		public void itemStateChanged(ItemEvent e) {
-			if ((e.getItem()).equals("LineSection")) lineStat = true;
-			else lineStat = false;
-			sumIndicator.setText("Sum=" + getSum());
-			meanIndicator.setText("Mean=" + getMean());
-			sigmaIndicator.setText("Sigma=" + getSigma());
-			System.out.println("\n" + e.getItem());
-		}
-	}
-*/
+	
 	private class ChangeColorListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			changeColorScala();
@@ -229,24 +218,13 @@ public class DataFrame extends JFrame {
 		private int[] pointX = new int[2];
 		private int[] pointY = new int[2];
 
-		private DataCanvas() {
-			addMouseListener(this);
-		}
-
-		public Dimension getPreferredSize() {
-			return new Dimension(256, 256);
-		}
-
-		public Dimension getMinimumSize() {
-			return new Dimension(256, 256);
-		}
+		private DataCanvas() {addMouseListener(this);}
+		public Dimension getPreferredSize() {return new Dimension(256, 256);}
+		public Dimension getMinimumSize() {return new Dimension(256, 256);}
 
 		public void mouseReleased(MouseEvent e) {}
-
 		public void mouseClicked(MouseEvent e) {}
-
 		public void mouseExited(MouseEvent e) {}
-
 		public void mouseEntered(MouseEvent e) {}
 
 		public void mousePressed(MouseEvent e) {
@@ -267,14 +245,6 @@ public class DataFrame extends JFrame {
 			}
 		}
 
-		/*
-		 * public void save(){ Image offscreen=createImage(256,256); Graphics
-		 * g=offscreen.getGraphics(); for(int i=0;i <256;i++){
-		 * g.drawImage(MyImages[i],0,i,null); } try{ FileOutputStream out=new
-		 * FileOutputStream(new File("MeinBildli.gif")); GifEncoder encoder=new
-		 * GifEncoder(offscreen,out); encoder.encode(); out.close();
-		 * }catch(IOException e){ //e.printStackTrace(); } }
-		 */
 		public void paint(Graphics g) {
 			Image LineImage;
 			final int radius = 3;
@@ -324,17 +294,9 @@ public class DataFrame extends JFrame {
 			addMouseListener(this);
 		}
 
-		public byte[] getData() {
-			return linSecData;
-		}
-
-		public Dimension getPreferredSize() {
-			return new Dimension(256, 256);
-		}
-
-		public Dimension getMinimumSize() {
-			return new Dimension(256, 256);
-		}
+		public byte[] getData() {return linSecData;}
+		public Dimension getPreferredSize() {return new Dimension(256, 256);}
+		public Dimension getMinimumSize() {return new Dimension(256, 256);}
 
 		public void setData(byte[] newData) {
 			linSecData = newData;
@@ -342,11 +304,8 @@ public class DataFrame extends JFrame {
 		}
 
 		public void mouseReleased(MouseEvent e) {}
-
 		public void mouseClicked(MouseEvent e) {}
-
 		public void mouseExited(MouseEvent e) {}
-
 		public void mouseEntered(MouseEvent e) {}
 
 		public void mousePressed(MouseEvent e) {
@@ -412,10 +371,6 @@ public class DataFrame extends JFrame {
 			myg.drawString(MyText, x[0] - 10, y[0] - 10);
 		}
 
-		public void paint(Graphics g) {
-			paintMe();
-		}
-
+		public void paint(Graphics g) {paintMe();}
 	}
-
 }

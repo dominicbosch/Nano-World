@@ -25,7 +25,8 @@ public class NanoComm {
 	public static final String CMD_PONG = "pong";
 
 	public static final String COMMAND_STATE = "remexpstate";
-	public static final int STATE_STAGEREADY = 10; 			// AFM and stage ready
+	public static final int STATE_UNAVAILABLE = 1; 			// Rem exp not available
+	public static final int STATE_STAGEREADY = 10; 			// Rem exp and stage ready
 	public static final int STATE_STAGEMOVING = 11; 		// stage moving
 	public static final int STATE_STAGECALIBRATED = 12; 	// stage calibrated
 	public static final int STATE_APPROACHING = 20; 		// AFM approaches
@@ -36,10 +37,14 @@ public class NanoComm {
 	public static final String COMMAND_INFO = "cbrinfo";
 	public static final int INFO_REMEXP_CONNECTED = 201; 	// RemExp connected
 	public static final int INFO_REMEXP_DISCONNECTED = 202; // RemExp not connected
+	public static final int INFO_SERVER_CONNECTED = 210; 	// Server connected
+	public static final int INFO_SERVER_DISCONNECTED = 211; // Server not connected
+	public static final int INFO_MSG_TO_CLIENT = 231; 		// a message for the client
 
 	public static final String COMMAND_PRIV = "cbrpriv";
 	public static final int PRIV_OBSERVER = 401; 			// observer privileges
 	public static final int PRIV_CONTROLLER = 411; 			// controller privileges
+	public static final int PRIV_ADVANCED = 412; 			// advanced controller privileges
 	public static final int PRIV_ADMIN = 421; 				// admin privileges
 	
 	public static final String COMMAND_PARAM = "remexpparam";
@@ -54,6 +59,7 @@ public class NanoComm {
 	public static String strCmd(String cmd){return COMMAND_CMD + DELIMITER + cmd;}
 	public static String strState(int state){return COMMAND_STATE + DELIMITER + state;}
 	public static String strInfo(int info){return COMMAND_INFO + DELIMITER + info;}
+	public static String strInfo(String info){return COMMAND_INFO + DELIMITER + info;}
 	public static String strParam(String params){return COMMAND_PARAM + DELIMITER + params;}
 	public static String strPriv(int val){return COMMAND_PRIV + DELIMITER + val;}
 	

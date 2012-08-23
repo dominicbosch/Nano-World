@@ -14,7 +14,6 @@ import javax.swing.JPanel;
 /**
  * Copyright: Copyright (c) 2012
  * 
- * @author
  * @version 1.1
  */
 

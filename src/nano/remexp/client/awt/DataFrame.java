@@ -23,6 +23,12 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+/**
+ * 
+ * 
+ * @author Dominic Bosch
+ * @version 1.1 23.08.2012
+ */
 public class DataFrame extends JFrame {
 	private static final long serialVersionUID = 1L;
 	DataCanvas dataCanvas;

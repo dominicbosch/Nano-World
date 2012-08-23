@@ -4,6 +4,9 @@ import nano.debugger.Debg;
 
 /**
  * 
+ * 
+ * @author Dominic Bosch
+ * @version 1.1 23.08.2012
  */
 public abstract class ThreadHandler implements Runnable{
 	private Thread thisThread = null;

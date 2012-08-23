@@ -10,7 +10,8 @@ import java.net.UnknownHostException;
 /**
  * Used to imitate the remote experiments server by sending events captured by the standard input.
  * 
- * @author dominic
+ * @author Dominic Bosch
+ * @version 1.1 23.08.2012
  */
 public class SimpleRemExpEventServer {
 	public SimpleRemExpEventServer(){

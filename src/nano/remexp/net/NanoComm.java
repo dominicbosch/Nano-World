@@ -1,5 +1,11 @@
 package nano.remexp.net;
 
+/**
+ * The bits and pieces of the communication protocol.
+ * 
+ * @author Dominic Bosch
+ * @version 1.1 23.08.2012
+ */
 public class NanoComm {
 	private NanoComm(){}
 	

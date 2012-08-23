@@ -17,6 +17,9 @@ import javax.swing.JComponent;
  *  This components attempts to get around this problem by doing the
  *  background painting on behalf of its contained Component, using the
  *  background Color of the Component.
+ * 
+ * @author Dominic Bosch
+ * @version 1.1 23.08.2012
  */
 public class AlphaContainer extends JComponent {
     /**

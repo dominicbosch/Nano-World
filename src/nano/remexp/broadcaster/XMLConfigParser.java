@@ -15,6 +15,12 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+/**
+ * 
+ * 
+ * @author Dominic Bosch
+ * @version 1.1 23.08.2012
+ */
 public class XMLConfigParser {
 	Document doc;
 	RemoteExperimentBroadcaster cbr;

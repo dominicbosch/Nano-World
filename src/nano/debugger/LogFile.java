@@ -13,6 +13,12 @@ import java.util.logging.Logger;
 
 import nano.remexp.ThreadHandler;
 
+/**
+ * 
+ * 
+ * @author Dominic Bosch
+ * @version 1.1 23.08.2012
+ */
 public class LogFile {
 	final static int FILE_SIZE = 1*1024*1024;
 	final static int NUM_LOGS = 500;

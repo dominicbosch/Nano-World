@@ -14,9 +14,10 @@ import java.net.UnknownHostException;
 import javax.imageio.ImageIO;
 
 /**
- * Used to imitate the remote experiments server by sending events captured by the standard input.
+ * Used to imitate the remote experiments server by sending data over the stream socket.
  * 
- * @author dominic
+ * @author Dominic Bosch
+ * @version 1.1 23.08.2012
  */
 public class SimpleRemExpStreamServer {
 	private SimpleRemExpStreamServer server;

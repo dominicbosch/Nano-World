@@ -6,6 +6,12 @@ import java.util.Vector;
 import nano.debugger.Debg;
 import nano.remexp.ThreadHandler;
 
+/**
+ * 
+ * 
+ * @author Dominic Bosch
+ * @version 1.1 23.08.2012
+ */
 public class NanoSocketObserver extends ThreadHandler{
 	private Vector<NanoSocket> tmpRemove;
 	private Vector<NanoSocket> listSocks;

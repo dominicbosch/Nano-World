@@ -9,6 +9,12 @@ import java.util.Date;
 import nano.debugger.Debg;
 import nano.remexp.ThreadHandler;
 
+/**
+ * 
+ * 
+ * @author Dominic Bosch
+ * @version 1.1 23.08.2012
+ */
 public abstract class NanoSocket extends ThreadHandler{
 	protected Socket clientSocket = null;
     protected BufferedOutputStream bos;

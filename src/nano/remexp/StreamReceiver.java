@@ -2,7 +2,7 @@ package nano.remexp;
 
 
 /**
- * An interface for all the classes that hold a stream
+ * An interface for all the classes that hold a data stream.
  * 
  * @author Dominic Bosch
  * @version 1.1 23.08.2012

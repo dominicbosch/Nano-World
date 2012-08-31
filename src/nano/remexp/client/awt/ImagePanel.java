@@ -14,7 +14,6 @@ import nano.remexp.client.ClientGUI;
  * 
  * Copyright: Copyright (c) 2012
  * 
- * @author
  * @version 1.1
  */
 
@@ -24,6 +23,7 @@ public class ImagePanel extends JPanel {
 	JButton buttonAnalysis = new JButton("Analysis");
 	NetObserver netObserver;
 	VerlaufCanvas verlauf;
+	Dimension size;
 
 	/**
 	 * The constructor initializes this JPanel.
@@ -32,7 +32,8 @@ public class ImagePanel extends JPanel {
 	 */
 	public ImagePanel(NetObserver observer) {
 		setBackground(Color.white);
-		ClientGUI.setupComponent(this, new Dimension(500, 25));
+		size = new Dimension(500, 25);
+		ClientGUI.setupComponent(this, size);
 		ClientGUI.setupComponent(buttonAnalysis, new Dimension(80, 25));
 		ClientGUI.setupComponent(buttonChangeColor, new Dimension(120, 25));
 		netObserver = observer;
@@ -43,6 +44,10 @@ public class ImagePanel extends JPanel {
 		add(buttonChangeColor);
 		buttonChangeColor.addActionListener(new ColorListener());
 		buttonAnalysis.addActionListener(new SaveDataListener());
+	}
+	
+	public Dimension getDim(){
+		return size;
 	}
 
 	private class ColorListener implements ActionListener {

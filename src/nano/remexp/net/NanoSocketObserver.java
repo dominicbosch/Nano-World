@@ -7,13 +7,14 @@ import nano.debugger.Debg;
 import nano.remexp.ThreadHandler;
 
 /**
- * 
+ * This class allows to observe running NanoSockets and check them for responses.
+ * If they did not respond in a while they are being flagged for removal.
  * 
  * @author Dominic Bosch
  * @version 1.1 23.08.2012
  */
 public class NanoSocketObserver extends ThreadHandler{
-	private Vector<NanoSocket> tmpRemove;
+	private Vector<NanoSocket> listRemove;
 	private Vector<NanoSocket> listSocks;
 	private long timeAllowedToLastSignOfLife;
 	private boolean doShutdown;
@@ -33,7 +34,7 @@ public class NanoSocketObserver extends ThreadHandler{
 	 * @param timeDelayAllowed the time in milliseconds a socket is allowed not to respond.
 	 */
 	public NanoSocketObserver(long timeDelayAllowed){
-		tmpRemove = new Vector<NanoSocket>();
+		listRemove = new Vector<NanoSocket>();
 		listSocks = new Vector<NanoSocket>();
 		timeAllowedToLastSignOfLife = timeDelayAllowed;
 		doShutdown = false;
@@ -73,25 +74,25 @@ public class NanoSocketObserver extends ThreadHandler{
 		try {Thread.sleep(2000);} catch (InterruptedException e) {Debg.err("Couldn't sleep...");}
 		for(NanoSocket sock: listSocks){
 			if(now - sock.getLastSignOfLife() > timeAllowedToLastSignOfLife && sock.isActiveSocket()){
-				tmpRemove.add(sock);
+				listRemove.add(sock);
 			}
 		}
-		for(NanoSocket sock: tmpRemove){
+		for(NanoSocket sock: listRemove){
 			Debg.print("found socket that didn't answer for more than 10 seconds: " + sock.getRemoteID());
 			sock.shutDown();
 		}
-		tmpRemove.clear();
+		listRemove.clear();
 		try {Thread.sleep(2000);} catch (InterruptedException e) {Debg.err("Couldn't sleep...");}
 		if(doShutdown){
 			Debg.print("Shutting down NanoSocketObserver");
 			if(listSocks!=null){
 				Vector<NanoSocket> tmp = new Vector<NanoSocket>();
 				for(NanoSocket sock: listSocks) tmp.add(sock);
-				listSocks.clear();
-				listSocks = null;
 				for(NanoSocket sock: tmp) sock.shutDown();
 				tmp.clear();
 				tmp = null;
+				listSocks.clear();
+				listSocks = null;
 			}
 		}
 	}
@@ -101,5 +102,4 @@ public class NanoSocketObserver extends ThreadHandler{
 		stopThread();
 		doShutdown = true;
 	}
-	
 }

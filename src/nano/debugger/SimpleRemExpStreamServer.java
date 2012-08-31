@@ -25,14 +25,14 @@ public class SimpleRemExpStreamServer {
 	
 	public SimpleRemExpStreamServer(){
 		server = this;
-		waitFlag = false;
+		waitFlag = true;
 		new KeyboardListener();
 
         Socket echoSocket = null;
         BufferedOutputStream out = null;
-        String host = "rafmdmzdsvr.cs.unibas.ch";
+        //String host = "rafmdmzdsvr.cs.unibas.ch";
         //String host = "131.152.85.135";
-        //String host = "localhost";
+        String host = "localhost";
         
         try {
             echoSocket = new Socket(host, 8014);
@@ -85,7 +85,7 @@ public class SimpleRemExpStreamServer {
 		        		arrBytes[j] = (byte)(getPixelData(arrInts[j])[0] - 128);
 		        	}
 		        	arrBytes[0] = (byte)(i - 128);
-			        try {
+		        	try {
 						out.write(arrBytes,0,256);
 				        out.flush();
 					} catch (IOException e) {
@@ -99,19 +99,6 @@ public class SimpleRemExpStreamServer {
 						hasException = true;
 						i = height;
 					}
-		        	if(i == 0){
-		        		for(int j = 0; j < width; j++){
-		        			arrBytes[j] = (byte)(j - 128);
-		        		}
-				        try {
-							out.write(arrBytes,0,256);
-					        out.flush();
-						} catch (IOException e) {
-							e.printStackTrace();
-							hasException = true;
-							i = height;
-						}
-		        	}
 				}
 	        }
         }
@@ -120,6 +107,7 @@ public class SimpleRemExpStreamServer {
 			echoSocket.close();
 		} catch (IOException e) {}
 		System.out.println("Server ended.");
+		System.exit(0);
 	}
 
 	private static int[] getPixelData(int argb) {
@@ -147,6 +135,7 @@ public class SimpleRemExpStreamServer {
 				while ((userInput = stdIn.readLine()) != null) {
 				    System.out.println("echo: " + userInput);
 				    if(userInput.matches("stop")) waitFlag = true;
+				    if(userInput.matches("quit")) stdIn.close();
 				    else if(userInput.matches("start")) {
 				    	waitFlag = false;
 				    	synchronized(server){
@@ -158,6 +147,7 @@ public class SimpleRemExpStreamServer {
 				e.printStackTrace();
 			}
 			System.out.println("ended");
+			System.exit(0);
 		}
 	}
 	

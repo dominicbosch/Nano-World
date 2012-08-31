@@ -12,7 +12,10 @@ import nano.remexp.CommandExecutor;
 import nano.remexp.Parser;
 
 /**
- * The lowest layer within this project that handles the socket events
+ * This class holds the privilege of the socket and allows
+ * communication between all parts.
+ * It is used for the event propagation between client,
+ * remote experiment broadcaster and remote experiment.
  * 
  * @author Dominic Bosch
  * @version 1.1 23.08.2012
@@ -32,7 +35,7 @@ public class EventSocket extends NanoSocket {
 	 * waits for messages from the socket.
 	 * 
 	 * @param myClientSocket the socket this thread has to listen on
-	 * @param listener the event listener that will be informed about events on this socket
+	 * @param chief the event listener that will be informed about events on this socket
 	 */
     public EventSocket(Socket myClientSocket, EventSocketListener chief){
     	super(EventSocket.class.getSimpleName(), myClientSocket);
@@ -61,7 +64,7 @@ public class EventSocket extends NanoSocket {
 	/**
 	 * Listening on the in buffer for events that are being passed to the listener
 	 */
-	public void doTask() {
+	@Override public void doTask() {
 		boolean wasSocketCommand;
 		String inputLine = "";
 		if(isInitialized){
@@ -87,19 +90,18 @@ public class EventSocket extends NanoSocket {
 		}
 	}
 
-	@Override
-	public void ping(){
+	@Override public void ping(){
 		put(NanoComm.strCmd(NanoComm.CMD_PING));
 	}
 	
 	/**
 	 * Sends the message through the socket
 	 * 
-	 * @param message the message to be sent
+	 * @param message	the message to be sent
 	 */
 	public void put(String message){
 		try {
-			outPs.print(message + "\015\012"); //TODO println(message)?
+			outPs.print(message + "\015\012");
 			outPs.flush();
 		} catch (Exception e) {
 			Debg.print("Unable to send " + message + ", shutting down this socket: " + getRemoteID());
@@ -108,9 +110,18 @@ public class EventSocket extends NanoSocket {
 	}
 	
 	/**
+	 * Sends the message through the socket
+	 * 
+	 * @param message	the message to be sent
+	 */
+	public void sendClientInfo(String message){
+		put(NanoComm.strInfo(NanoComm.INFO_MSG_TO_CLIENT) + " " + message);
+	}
+	
+	/**
 	 * The user ID belonging to this socket if a booking has been made.
 	 * 
-	 * @return A string containing the user id.
+	 * @return	A string containing the user id.
 	 */
 	public String getUserID() {
 		if(userID == null) return "";
@@ -121,7 +132,7 @@ public class EventSocket extends NanoSocket {
 	 * Returns the integer defining the privilege the user has gained through this socket.
 	 * Check this class's constants starting with PRIV_* for the available privileges.
 	 * 
-	 * @return the integer defining the privilege.
+	 * @return	the integer defining the privilege.
 	 */
 	public int getPrivilege(){
 		return privilege;
@@ -134,15 +145,9 @@ public class EventSocket extends NanoSocket {
 	 */
 	public void setPrivilege(int priv){
 		Debg.print("privilege set to: " + priv + ", old privilege: " + privilege);
-		privilege = priv;
-		switch(priv){
-			case NanoComm.PRIV_ADMIN:
-			case NanoComm.PRIV_CONTROLLER:
-			case NanoComm.PRIV_OBSERVER:
-				put(NanoComm.strPriv(priv));
-				break;
-			default:
-				break;
+		if(priv > -1){
+			put(NanoComm.strPriv(priv));
+			privilege = priv;
 		}
 	}
 
@@ -157,7 +162,7 @@ public class EventSocket extends NanoSocket {
 	}
 	
 	/**
-	 * calls the calls the super's method too, closes everything and cleans up
+	 * calls the calls the super's method too, closes everything and cleans up.
 	 */
 	public synchronized void shutDown() {
 		try {

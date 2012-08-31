@@ -52,7 +52,8 @@ public class Password {
 	}
 
 	/**
-	 * Main method for testing purposes.
+	 * Main method for testing purposes. It will ask on the system line to enter a string
+	 * that will be converted to a hex string
 	 * 
 	 * @param args no args needed.
 	 */

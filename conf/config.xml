@@ -1,17 +1,18 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "config.dtd">
 <cbrinit>
-	<!-- debugmode:
-			-1 = no debug information displayed
-			 1 = print full information
-			 2 = print reduced information
-	 -->
 	<debugmode>
-		<console>1</console>
-		<logfile>2</logfile>
+		<!-- mode:
+			-1 = no debug information displayed
+			 1 = print to stdout
+			 2 = store in logfile
+			 3 = print to stdout and store in logfile
+		 -->
+		<mode>3</mode>
+		<!-- This is only the extension of the log file since a time stamp will be added in front -->
+		<logfileext>_cbr.log</logfileext>
 	</debugmode>
-	<initremexpname>
-		<name>RAFM</name>
-	</initremexpname>
+	<initremexpname>RAFM</initremexpname>
 	<initremexpports>
 		<eventport>8012</eventport>
 		<streamport>8014</streamport>
@@ -21,7 +22,7 @@
 		<streamport>9102</streamport>
 	</initclientports>
 	<addallowedhosts>
-		<host>127.0.0.1</host>
+		<!-- <host>127.0.0.1</host> -->
 		<host>131.152.85.170</host>
 	</addallowedhosts>
 	<adduser>
@@ -29,6 +30,12 @@
 		<!-- pw: admin -->
 		<password>D:03:3E:22:AE:34:8A:EB:56:60:FC:21:40:AE:C3:58:50:C4:DA:99:7</password>
 		<privilege>PRIV_ADMIN</privilege>
+	</adduser>
+	<adduser>
+		<!-- pw: advanced -->
+		<username>advanced</username>
+		<password>E:62:85:43:69:19:9D:65:B6:A6:6C:D9:0F:E8:20:3A:C4:D5:BE:26:C</password>
+		<privilege>PRIV_ADVANCED</privilege>
 	</adduser>
 	<adduser>
 		<!-- pw: controller -->
@@ -42,14 +49,15 @@
 		<privilege>PRIV_OBSERVER</privilege>
 	</adduser>
 	<addsample>
-		<name>Coin</name>
+		<name>Grid</name>
 		<commandmoveto>goto0</commandmoveto>
 		<commandreleaselock>P0 OK</commandreleaselock>
-		<posx>500</posx>
-		<posy>500</posy>
-		<deltax>0</deltax>
-		<deltay>0</deltay>
+		<posx>10000</posx>
+		<posy>10000</posy>
+		<deltax>300</deltax>
+		<deltay>300</deltay>
 	</addsample>
+	<addsample>
 		<name>Coin</name>
 		<commandmoveto>goto1</commandmoveto>
 		<commandreleaselock>P1 OK</commandreleaselock>
@@ -62,8 +70,8 @@
 		<name>Sphere</name>
 		<commandmoveto>goto2</commandmoveto>
 		<commandreleaselock>P2 OK</commandreleaselock>
-		<posx>10000</posx>
-		<posy>10000</posy>
+		<posx>10400</posx>
+		<posy>9300</posy>
 		<deltax>50</deltax>
 		<deltay>50</deltay>
 	</addsample>

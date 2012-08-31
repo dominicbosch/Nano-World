@@ -2,6 +2,7 @@ package nano.remexp.client.awt;
 
 import java.awt.Canvas;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 import nano.remexp.StreamReceiver;
+import nano.remexp.client.ClientGUI;
 
 /**
  * listens to the input stream of what is scanned at the moment
@@ -41,6 +43,7 @@ public class NetObserver extends Canvas implements StreamReceiver {
 	public NetObserver() {
 		colorScala = new ColorScala();
 		colorScala.setColors(Color.blue, Color.white);
+		ClientGUI.setupComponent(this, new Dimension(256, 256));
 		setSize(256, 256);
 		setBackground(Color.white);
 		setForeground(Color.red);

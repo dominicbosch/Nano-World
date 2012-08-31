@@ -8,9 +8,6 @@ import java.net.Socket;
 
 import nano.debugger.Debg;
 import nano.remexp.StreamReceiver;
-import nano.remexp.broadcaster.net.FilteringPool;
-import nano.remexp.broadcaster.net.RemExpSocketAcceptor;
-import nano.remexp.broadcaster.net.StreamPipe;
 import nano.remexp.net.EventSocket;
 import nano.remexp.net.EventSocketListener;
 import nano.remexp.net.NanoComm;
@@ -18,9 +15,9 @@ import nano.remexp.net.StreamSocket;
 import nano.remexp.net.StreamSocketInterface;
 
 /**
- * This is the main class to be started as command and stream broadcaster between the
+ * This is the main class to be started. It is a command and stream broadcaster between the
  * remote experiments server and the clients. It funnels the commands and allows only
- * a defined set to be passed. 
+ * a defined set to be passed. It implements locking mechanisms during execution of certain commands. 
  * 
  * @author Dominic Bosch
  * @version 1.1 23.08.2012
@@ -41,11 +38,10 @@ public class RemoteExperimentBroadcaster implements EventSocketListener, StreamS
 	private int sampleID = 0;
 	private String remExpName = "";
 	private boolean isShuttingDown;
-	private boolean wasNotYetConnected = true;
 	
 	/**
-	 * The constructor of the server instantiates a new pipe through which the stream data from the 
-	 * experiment are being passed towards the client.
+	 * Instantiates, but doesn't start yet, objects that will listen for the connecting remote experiment.
+	 * the method @see initServer is called, which loads the xml configuration file. 
 	 * 
 	 * @param confFolder The location of the configuration folder to be loaded at runtime.
 	 */
@@ -56,9 +52,10 @@ public class RemoteExperimentBroadcaster implements EventSocketListener, StreamS
 	}
 
 	/**
-	 * The initialization of this restricted server instance sets the
-	 * commands for which the server listens, processes the configuration
-	 * file config.dat in the confFolder, which is necessary for initialization.
+	 * The initialization of this remote experiment server instance processes the configuration
+	 * file config.xml in the confFolder, which is necessary for initialization.
+	 * It instantiates a new pipe through which the stream data from the 
+	 * experiment is passed to the clients.
 	 * 
 	 * @param confFolder the location of the folder containing the config file.
 	 */
@@ -83,17 +80,18 @@ public class RemoteExperimentBroadcaster implements EventSocketListener, StreamS
 		Debg.print("### Server started ###");
 	}
 	
-	protected void initLogger(int dbgmodeConsole, int dbgmodeLogFile){
-		Debg.setDebugMode("cbr.log", dbgmodeConsole, dbgmodeLogFile);
-	}
-	
-	protected void finishedInitialization(){
-		isFinishedInitializing = true;
+	/**
+	 * Sets the debug mode and log file name if necessary.
+	 * 
+	 * @param logFileExt the extension of the log file
+	 * @param dbgMode the debug mode, see @see Debg class for more information about debug modes.
+	 */
+	protected void initLogger(String logFileExt, int dbgMode){
+		Debg.setDebugMode(logFileExt, dbgMode);
 	}
 
 	/**
-	 * This function handles the initialization of the remote experiments server ports
-	 * according to their definition in the config.dat file.
+	 * This function handles the initialization of the ports for the remote experiment.
 	 * 
 	 * @param eventPort the event port on which this server listens for the connecting experiment server.
 	 * @param streamPort the stream port on which this server listens for connecting experiment server.
@@ -108,21 +106,6 @@ public class RemoteExperimentBroadcaster implements EventSocketListener, StreamS
 		} else {
 			Debg.err("Somebody tried to change the ports to the remote experiment!");
 		}
-	}
-	
-	/**
-	 * This function handles the initialization of the remote experiments server ports
-	 * according to their definition in the config.dat file.
-	 * 
-	 * @param eventPort the event port on which this server listens for the connecting experiment server.
-	 * @param streamPort the stream port on which this server listens for connecting experiment server.
-	 */
-	protected void addRemExpHost(String host) {
-		if(!isFinishedInitializing){
-			sas.addHost(host);
-			sae.addHost(host);
-			Debg.print("Added allowed host: " + host);
-		} else Debg.err("Too late to add allowed host: " + host);
 	}
 
 	/**
@@ -145,13 +128,94 @@ public class RemoteExperimentBroadcaster implements EventSocketListener, StreamS
 	}
 	
 	/**
+	 * Passes the Rig name to the pool for registration.
+	 * 
+	 * @param rigname	the Rig name to be registered.
+	 */
+	protected void addRig(String rigname){
+		if(!isFinishedInitializing){
+			if(pool != null) pool.addRig(rigname);
+			Debg.print("Rig loaded: " + rigname);
+		} Debg.err("Too late to add rig " + rigname);
+	}
+
+	/**
+	 * Registers the name of the connected remote experiment.
+	 * 
+	 * @param name	the name of the remote experiment
+	 */
+	protected void setRemExpName(String name) {
+		if(pool == null) remExpName = name;
+		else pool.setRemExpName(name);
+	}
+
+	/**
+	 * Looks in the NanoComm class for an appropriate privilege field and registers the credentials
+	 * in the pool if the input is valid.
+	 * 
+	 * @param uname		the credential's user name
+	 * @param pw		the credential's password
+	 * @param priv		the privileges that are gained by logging in with these credentials
+	 */
+	protected void addUser(String uname, String pw, String priv){
+		if(uname == null || priv == null){
+			Debg.err("Missing parameter for command adduser");
+		} else {
+			if(pw == null) pw = "";
+			try {
+				int privVal = NanoComm.class.getDeclaredField(priv).getInt(null);
+				if(pool != null) pool.addAccess(uname, pw, privVal);
+				Debg.print("user " + uname + " loaded");
+			} catch (Exception e) {
+				Debg.err("Error in loading privilege: " + priv + ", field doesn't exist!");
+			}
+		}
+	}
+
+	/**
+	 * Passes sample parameters to the pool for registration if they are valid. 
+	 * 
+	 * @param nm	the name of the sample
+	 * @param cmd	the command to make the stage mov to the sample
+	 * @param rel	the command sent by the remote experiment, indicating the movement to the sample succeeded
+	 * @param x		the initial x position of the tip at this sample
+	 * @param y		the initial y position of the tip at this sample 
+	 * @param dx	the maximum distance allowed away from the initial tip position in x direction
+	 * @param dy	the maximum distance allowed away from the initial tip position in y direction
+	 */
+	protected void addSample(String nm, String cmd, String rel, String x, String y, String dx, String dy){
+		if(nm == null || cmd == null || rel == null || x == null || y == null || dx == null || dy == null){
+			Debg.err("Missing parameter for command addsample");
+		} else try{
+			Debg.print("Added sample: ID=" + sampleID + ", name=" + nm + ", cmd=" + cmd + ", release=" + rel 
+					+ ", x=" + x + ", y=" + y + ", dx=" + dx +", dy=" + dy);
+			if(pool != null) pool.addSample(sampleID++, nm, cmd, rel, Integer.parseInt(x), 
+					Integer.parseInt(y), Integer.parseInt(dx), Integer.parseInt(dy));
+		} catch(Exception e){Debg.err("Error in casting to int in addSample");}
+	}
+
+	/**
+	 * This method adds a host to the internal list of allowed hosts for the remote experiment.
+	 * This means only they are allowed to connect as remote experiment to the remote experiments broadcaster.
+	 * 
+	 * @param host 	A host that is allowed to connect as remote experiment
+	 */
+	protected void addRemExpHost(String host) {
+		if(!isFinishedInitializing){
+			sas.addHost(host);
+			sae.addHost(host);
+			Debg.print("Added allowed host: " + host);
+		} else Debg.err("Too late to add allowed host: " + host);
+	}
+
+	/**
 	 * This method is used to set the event and stream sockets as soon as
 	 * they are connected.
 	 * 
 	 * @param sock The socket that has been connected.
 	 * @param port The port identifying either the stream or event socket.
 	 */
-	public void setRemExpSocket(Socket sock, int port){
+	protected void setRemExpSocket(Socket sock, int port){
 		if(pool != null) {
 			if(port == remExpEventPort) {
 				if(eventSocketToRemExp != null) {
@@ -160,7 +224,6 @@ public class RemoteExperimentBroadcaster implements EventSocketListener, StreamS
 				}
 				eventSocketToRemExp = new EventSocket(sock, this);
 				pool.addSocketToObserve(eventSocketToRemExp);
-				initializeRemoteExperiment();
 			} else if(port == remExpStreamPort){
 				if(streamSocketToRemExp != null){
 					streamSocketToRemExp.shutDown();
@@ -170,7 +233,7 @@ public class RemoteExperimentBroadcaster implements EventSocketListener, StreamS
 				streamSocketToRemExp.plugDisplay(this);
 				pool.addSocketToObserve(streamSocketToRemExp);
 			}
-			if(streamSocketToRemExp != null && streamSocketToRemExp != null) pool.setRemExpConnected(true);
+			if(eventSocketToRemExp != null && streamSocketToRemExp != null) pool.setRemExpConnected(true);
 			else pool.setRemExpConnected(false);
 		} else {
 			Debg.err("Fatal error in initialization!");
@@ -178,17 +241,18 @@ public class RemoteExperimentBroadcaster implements EventSocketListener, StreamS
 		}
 	}
 
-	private void initializeRemoteExperiment(){
-		if(eventSocketToRemExp != null && wasNotYetConnected){
-			eventSocketToRemExp.put(NanoComm.strCmd(NanoComm.CMD_STOP));
-			try {Thread.sleep(3000);} catch (InterruptedException e1) {}
-			eventSocketToRemExp.put(NanoComm.strCmd(NanoComm.CMD_WITHDRAW));
-			try {Thread.sleep(3000);} catch (InterruptedException e) {}
-			if(pool!=null) pool.initRemExp();
-			else Debg.err("Fatal error in initialization!");
-			wasNotYetConnected = false;
-		}
+	/**
+	 * Sets the flag that indicates all data has been loaded from the xml configuration file.
+	 */
+	protected void finishedInitialization(){
+		isFinishedInitializing = true;
 	}
+
+/*
+ * <-- Until here initialization functions.
+ * 
+ * --> From here runtime functions:
+ */
 	
 	/**
 	 * Remote experiment sends event thus this has to be processed and delivered further.
@@ -213,7 +277,7 @@ public class RemoteExperimentBroadcaster implements EventSocketListener, StreamS
 	 *  
 	 * @return True if the remote experiments event socket is connected, else false. 
 	 */
-	public boolean isRemExpConnected(){
+	protected boolean isRemExpConnected(){
 		return eventSocketToRemExp != null;
 	}
 	
@@ -222,9 +286,25 @@ public class RemoteExperimentBroadcaster implements EventSocketListener, StreamS
 	 * 
 	 * @param message the message to be sent through the socket
 	 */
-	public synchronized void sendToRemExp(String message){
+	protected synchronized void sendToRemExp(String message){
 		if(eventSocketToRemExp != null) eventSocketToRemExp.put(message);
 		else Debg.err("No remote experiment server connected! Can't send message " + message);
+	}
+	
+	/**
+	 * This function is called when the remote experiment sends 
+	 * data through the stream socket. The data is then shoved into the pipe. 
+	 * 
+	 * @param b The byte array to be sent through the pipe.
+	 */
+	@Override
+	public void write(byte[] b) {
+		try {
+			if(pool != null) pool.setStreamTimestamp();
+			pipeStart.write(b);
+		} catch (IOException e) {
+			Debg.err("Couldn't write data into pipe");
+		}
 	}
 
 	/**
@@ -252,87 +332,23 @@ public class RemoteExperimentBroadcaster implements EventSocketListener, StreamS
 	}
 	
 	/**
-	 * This function is called when the remote experiment sends 
-	 * data through the stream socket. The data is then shoved into the pipe. 
-	 * 
-	 * @param b The byte array to be sent through the pipe.
-	 */
-	@Override
-	public void write(byte[] b) {
-		try {
-			if(pool != null) pool.setStreamTimestamp();
-			pipeStart.write(b);
-		} catch (IOException e) {
-			Debg.err("Couldn't write data into pipe");
-		}
-	}
-
-	/**
 	 * Not used for remote experiment socket.
 	 */
 	@Override
 	public void login(EventSocket sock, String user, String pass) {}
 
-	protected void addUser(String uname, String pw, String priv){
-		if(uname == null || priv == null){
-			Debg.err("Missing parameter for command adduser");
-		} else {
-			if(pw == null) pw = "";
-			try {
-				int privVal = NanoComm.class.getDeclaredField(priv).getInt(null);
-				if(pool != null) pool.addAccess(uname, pw, privVal);
-				Debg.print("user " + uname + " loaded");
-			} catch (Exception e) {
-				Debg.err("Error in loading privilege: " + priv + ", field doesn't exist!");
-			}
-		}
-	}
-	
-	protected void setAllowedControl(String priv){
-		try {
-			int privVal = NanoComm.class.getDeclaredField(priv).getInt(null);
-			if(pool != null) pool.addAllowedControl(privVal);
-			Debg.print("setting privilege " + privVal + " as allowed to show controls.");
-		} catch (Exception e) {
-			Debg.err("Error in setting privilege allowed to show controls: " + priv + ", field doesn't exist!");
-		}
-	}
-
-	protected void addSample(String nm, String cmd, String rel, String x, String y, String dx, String dy){
-		if(nm == null || cmd == null || rel == null || x == null || y == null || dx == null || dy == null){
-			Debg.err("Missing parameter for command addsample");
-		} else try{
-			Debg.print("Added sample: ID=" + sampleID + ", name=" + nm + ", cmd=" + cmd + ", release=" + rel 
-					+ ", x=" + x + ", y=" + y + ", dx=" + dx +", dy=" + dy);
-			if(pool != null) pool.addSample(sampleID++, nm, cmd, rel, Integer.parseInt(x), 
-					Integer.parseInt(y), Integer.parseInt(dx), Integer.parseInt(dy));
-		} catch(Exception e){Debg.err("Error in casting to int in addSample");}
-	}
-
-	/**
-	 * Handles the initialization of the rig.
-	 */
-	protected void addRig(String rigname){
-		if(!isFinishedInitializing){
-			if(pool != null) pool.addRig(rigname);
-			Debg.print("Rig loaded: " + rigname);
-		} Debg.err("Too late to add rig " + rigname);
-	}
-
-	protected void setRemExpName(String name) {
-		if(pool == null) remExpName = name;
-		else pool.setRemExpName(name);
-	}
-
 	/**
 	 * This function removes the link to the remote experiment and thus initializes reconnection.
 	 */
-	public void reconnectToRemExp(){
-		removeEventSocket(eventSocketToRemExp);
-		removeStreamSocket(streamSocketToRemExp);
+	protected void reconnectToRemExp(){
+		if(eventSocketToRemExp!=null) eventSocketToRemExp.shutDown();
+		if(streamSocketToRemExp!=null) streamSocketToRemExp.shutDown();
 	}
 	
-	public void restartCBR(){
+	/**
+	 * Shuts down the remote experiment broadcaster and then starts a new instance.
+	 */
+	protected void restartCBR(){
 		shutDownCBR();
 		try {
 			Thread.sleep(25000);
@@ -341,7 +357,11 @@ public class RemoteExperimentBroadcaster implements EventSocketListener, StreamS
 		new RemoteExperimentBroadcaster("conf");
 	}
 
-	public void shutDownCBR(){
+	/**
+	 * Shuts down everything on the remote experiment broadcaster.
+	 */
+	protected void shutDownCBR(){
+		pool.broadcast(NanoComm.strInfo(NanoComm.INFO_MSG_TO_CLIENT) + " Shutting down the server. Have a nice day!");
 		isShuttingDown = true;
 		Debg.err(" !!! SHUTDOWN CBR !!!");
 		if(sas!=null) sas.shutDown();
@@ -373,9 +393,9 @@ public class RemoteExperimentBroadcaster implements EventSocketListener, StreamS
 	 * a remote experiments server and the clients as a filtering and locking instance.
 	 * 
 	 * @param args no arguments are required to start the server.
-	 * Only the file {@code config.dat} in the folder {@code conf} must be present.
-	 * This file needs to contain the commands {@code initremexphost} and {@code initclientports}
-	 * and should hold a definition similar to the following:
+	 * Only the file {@code config.xml} in the folder {@code conf} must be present.
+	 * This file needs to contain the information according to the document type definition 
+	 * in the file config.dtd.
 	 * 
 	 */
 	public static void main(String[] args) {

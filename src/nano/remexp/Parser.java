@@ -105,6 +105,11 @@ public class Parser{
 		return null;
 	}
 	
+	/**
+	 * Splits a string that contains new lines, tabs, carriage returns, form feeds and blanks.
+	 * @param str the string to be splitted.
+	 * @return an array containing all strings that were separated in the string.
+	 */
 	private static String[] splitString(String str){
 		return str.split("\n|\t|\r|\f| ");
 	}

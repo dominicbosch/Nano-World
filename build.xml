@@ -83,13 +83,21 @@ e.g.: [...]/jdk1.7.0/bin
 			alias="${keystoreAlias}" />
 	</target>
 	
+<<<<<<< HEAD
 	<target name="doc" depends="dist">
+=======
+	<target name="doc" depends="compile">
+>>>>>>> origin/master
 		<delete dir="${doc.dir}"/>
 		<mkdir dir="${doc.dir}"/>
 		<javadoc packagenames="nano.*" 
 			sourcepath="src" 
 			destdir="doc" 
+<<<<<<< HEAD
 			classpath="${lib.dir}/Jama-1.0.2.jar" 
+=======
+			classpath="lib/Jama-1.0.2.jar" 
+>>>>>>> origin/master
 	        author="true"
 	        version="true"
 	        use="true"
